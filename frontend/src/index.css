@@ -2,26 +2,64 @@
 @tailwind components;
 @tailwind utilities;
 
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
 @layer base {
   body {
-    @apply bg-gray-50 text-gray-900 font-sans;
+    @apply bg-warm-50 text-warm-900 font-sans antialiased;
+  }
+  h1, h2, h3 {
+    @apply font-semibold tracking-tight;
   }
 }
 
 @layer components {
   .btn-primary {
-    @apply bg-zorba-600 hover:bg-zorba-700 text-white px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50;
+    @apply bg-zorba-600 hover:bg-zorba-700 active:bg-zorba-800 text-white px-4 py-2.5 rounded-lg font-medium transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm;
   }
   .btn-secondary {
-    @apply bg-white hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-lg font-medium border border-gray-300 transition-colors;
+    @apply bg-white hover:bg-warm-50 text-warm-800 px-4 py-2.5 rounded-lg font-medium border border-warm-200 transition-all duration-150 shadow-sm;
   }
   .btn-danger {
-    @apply bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-colors;
+    @apply bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 rounded-lg font-medium transition-all duration-150 shadow-sm;
+  }
+  .btn-ghost {
+    @apply hover:bg-warm-100 text-warm-700 px-4 py-2.5 rounded-lg font-medium transition-all duration-150;
   }
   .card {
-    @apply bg-white rounded-xl shadow-sm border border-gray-200 p-6;
+    @apply bg-white rounded-2xl shadow-sm border border-warm-100 p-6;
+  }
+  .card-hover {
+    @apply bg-white rounded-2xl shadow-sm border border-warm-100 p-6 hover:shadow-md hover:border-zorba-200 transition-all duration-200 cursor-pointer;
   }
   .badge {
-    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+    @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium;
+  }
+  .input {
+    @apply w-full border border-warm-200 rounded-xl px-4 py-2.5 text-sm bg-white text-warm-900 placeholder-warm-400 focus:outline-none focus:ring-2 focus:ring-zorba-400 focus:border-transparent transition-all;
+  }
+  .select {
+    @apply w-full border border-warm-200 rounded-xl px-4 py-2.5 text-sm bg-white text-warm-900 focus:outline-none focus:ring-2 focus:ring-zorba-400 focus:border-transparent transition-all;
+  }
+  .table-header {
+    @apply bg-warm-50 border-b border-warm-100 text-xs font-semibold text-warm-600 uppercase tracking-wider;
+  }
+  .table-row {
+    @apply border-b border-warm-50 hover:bg-zorba-50/30 transition-colors;
+  }
+  .section-title {
+    @apply text-2xl font-bold text-warm-900;
+  }
+  .nav-link {
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 text-warm-600 hover:bg-warm-100 hover:text-warm-900;
+  }
+  .nav-link-active {
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium bg-zorba-50 text-zorba-700 border border-zorba-200;
   }
 }
+
+/* Scrollbar suave */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #d6cab7; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #bfaa90; }

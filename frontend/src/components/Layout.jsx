@@ -2,63 +2,67 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/auth.store';
 
 const navItems = [
-  { to: '/', label: '📊 Dashboard', exact: true },
-  { to: '/pedidos', label: '🛍️ Pedidos TN' },
-  { to: '/pendientes', label: '⏳ Pendientes' },
-  { to: '/ordenes-compra', label: '📋 Órdenes de Compra' },
-  { to: '/stock', label: '📦 Stock' },
-  { to: '/proveedores', label: '🏭 Proveedores' },
-  { to: '/productos', label: '🔧 Productos' },
+  { to: '/', label: 'Dashboard', icon: '📊', exact: true },
+  { to: '/pedidos', label: 'Pedidos TN', icon: '🛍️' },
+  { to: '/pendientes', label: 'Pendientes', icon: '⏳' },
+  { to: '/ordenes-compra', label: 'Órdenes de Compra', icon: '📋' },
+  { to: '/stock', label: 'Stock', icon: '📦' },
+  { to: '/proveedores', label: 'Proveedores', icon: '🏭' },
+  { to: '/productos', label: 'Productos', icon: '🔧' },
 ];
 
 export default function Layout() {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
-
   return (
-    <div className="flex h-screen bg-gray-50">
-      {/* Sidebar */}
-      <aside className="w-64 bg-white border-r border-gray-200 flex flex-col">
-        <div className="p-6 border-b border-gray-200">
-          <h1 className="text-xl font-bold text-zorba-700">🏠 Casa Zorba</h1>
-          <p className="text-xs text-gray-500 mt-1">Operations Platform</p>
+    <div className="flex h-screen bg-warm-50">
+      <aside className="w-64 bg-white border-r border-warm-100 flex flex-col">
+        <div className="p-6 border-b border-warm-100">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-zorba-600 rounded-xl flex items-center justify-center text-white text-lg">🏠</div>
+            <div>
+              <h1 className="font-bold text-warm-900 leading-tight">Casa Zorba</h1>
+              <p className="text-xs text-warm-400 font-medium">Operations Platform</p>
+            </div>
+          </div>
         </div>
 
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-          {navItems.map(({ to, label, exact }) => (
+          {navItems.map(({ to, label, icon, exact }) => (
             <NavLink
               key={to}
               to={to}
               end={exact}
-              className={({ isActive }) =>
-                `flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  isActive
-                    ? 'bg-zorba-50 text-zorba-700 border border-zorba-200'
-                    : 'text-gray-600 hover:bg-gray-100'
-                }`
-              }
+              className={({ isActive }) => isActive ? 'nav-link-active' : 'nav-link'}
             >
-              {label}
+              <span className="text-base">{icon}</span>
+              <span>{label}</span>
             </NavLink>
           ))}
         </nav>
 
-        <div className="p-4 border-t border-gray-200">
-          <p className="text-xs text-gray-500 mb-2">{user?.nombre || user?.email}</p>
-          <button onClick={handleLogout} className="text-xs text-red-500 hover:text-red-700">
-            Cerrar sesión
+        <div className="p-4 border-t border-warm-100">
+          <div className="flex items-center gap-3 px-3 py-2 rounded-xl bg-warm-50">
+            <div className="w-8 h-8 rounded-full bg-zorba-100 flex items-center justify-center text-zorba-700 font-bold text-sm">
+              {(user?.nombre || 'A')[0]}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-warm-800 truncate">{user?.nombre || 'Admin'}</p>
+              <p className="text-xs text-warm-400 truncate">{user?.email}</p>
+            </div>
+          </div>
+          <button
+            onClick={() => { logout(); navigate('/login'); }}
+            className="mt-2 w-full text-left px-3 py-1.5 text-xs text-warm-500 hover:text-red-500 transition-colors rounded-lg hover:bg-red-50"
+          >
+            Cerrar sesión →
           </button>
         </div>
       </aside>
 
-      {/* Main content */}
       <main className="flex-1 overflow-auto">
-        <div className="p-8">
+        <div className="p-8 max-w-7xl mx-auto">
           <Outlet />
         </div>
       </main>
