@@ -30,11 +30,10 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-zorba-600 rounded-2xl shadow-lg mb-4">
-            <span className="text-3xl">🏠</span>
+          <div className="bg-white rounded-2xl shadow-sm border border-warm-100 px-8 py-5 inline-block mb-4">
+            <img src="/logo-casazorba.png" alt="Casa Zorba" className="h-16 w-auto object-contain" />
           </div>
-          <h1 className="text-3xl font-bold text-warm-900">Casa Zorba</h1>
-          <p className="text-warm-500 mt-1 font-medium">Operations Platform</p>
+          <p className="text-warm-500 font-medium">Operations Platform</p>
         </div>
 
         {/* Card */}

@@ -18,13 +18,10 @@ export default function Layout() {
   return (
     <div className="flex h-screen bg-warm-50">
       <aside className="w-64 bg-white border-r border-warm-100 flex flex-col">
-        <div className="p-6 border-b border-warm-100">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-zorba-600 rounded-xl flex items-center justify-center text-white text-lg">🏠</div>
-            <div>
-              <h1 className="font-bold text-warm-900 leading-tight">Casa Zorba</h1>
-              <p className="text-xs text-warm-400 font-medium">Operations Platform</p>
-            </div>
+        <div className="p-5 border-b border-warm-100">
+          <div className="flex flex-col items-center">
+            <img src="/logo-casazorba.png" alt="Casa Zorba" className="h-12 w-auto object-contain" />
+            <p className="text-xs text-warm-400 font-medium mt-2">Operations Platform</p>
           </div>
         </div>
 
