@@ -1,0 +1,2 @@
+import api from './client';
+export const getDashboardSummary = () => api.get('/dashboard/summary');

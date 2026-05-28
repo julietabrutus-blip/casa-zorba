@@ -1,0 +1,373 @@
+// Casa Zorba — Zorba Operations Platform
+// Prisma Schema — PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────
+// AUTH
+// ─────────────────────────────────────────
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  nombre       String
+  rol          String   @default("admin") // admin | operador | solo_lectura
+  activo       Boolean  @default(true)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  auditLogs AuditLog[]
+
+  @@map("users")
+}
+
+// ─────────────────────────────────────────
+// PROVEEDORES
+// ─────────────────────────────────────────
+
+model Supplier {
+  id                   String  @id @default(uuid())
+  nombre               String
+  telefono_whatsapp    String?
+  email                String?
+  contacto_nombre      String?
+  modo_envio_preferido String  @default("whatsapp") // whatsapp | email | manual
+  notas                String?
+  activo               Boolean @default(true)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  products       Product[]
+  purchaseOrders PurchaseOrder[]
+  invoices       SupplierInvoice[]
+  whatsappLogs   WhatsappLog[]
+
+  @@map("suppliers")
+}
+
+// ─────────────────────────────────────────
+// PRODUCTOS
+// ─────────────────────────────────────────
+
+model Product {
+  id                     String  @id @default(uuid())
+  tienda_nube_product_id String? @unique @map("tienda_nube_product_id")
+  tienda_nube_variant_id String? @map("tienda_nube_variant_id")
+  nombre_producto        String
+  sku_zorba              String? @map("sku_zorba")
+  codigo_proveedor       String? @map("codigo_proveedor")
+  descripcion            String?
+  unidad_medida          String  @default("unidad")
+  precio_compra_estimado Decimal? @map("precio_compra_estimado") @db.Decimal(12, 2)
+  activo                 Boolean @default(true)
+
+  supplierId String   @map("supplier_id")
+  supplier   Supplier @relation(fields: [supplierId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  orderItems         OrderItemTiendaNube[]
+  purchaseOrderItems PurchaseOrderItem[]
+  invoiceItems       SupplierInvoiceItem[]
+  stockMovements     StockMovement[]
+
+  @@index([supplierId])
+  @@index([sku_zorba])
+  @@index([tienda_nube_product_id])
+  @@map("products")
+}
+
+// ─────────────────────────────────────────
+// PEDIDOS TIENDA NUBE
+// ─────────────────────────────────────────
+
+model OrderTiendaNube {
+  id                    String   @id @default(uuid())
+  tienda_nube_order_id  String   @unique @map("tienda_nube_order_id")
+  numero_pedido         String   @map("numero_pedido")
+  fecha_pedido          DateTime @map("fecha_pedido")
+  estado_pedido         String   @map("estado_pedido") // open | paid | closed | cancelled
+  estado_pago           String   @map("estado_pago")   // pending | paid | voided | refunded
+  estado_abastecimiento String   @default("pendiente") @map("estado_abastecimiento")
+  // pendiente | parcial | completo | cancelado
+
+  cliente_nombre   String?  @map("cliente_nombre")
+  cliente_email    String?  @map("cliente_email")
+  cliente_telefono String?  @map("cliente_telefono")
+  total            Decimal  @db.Decimal(12, 2)
+  moneda           String   @default("ARS")
+  notas            String?
+
+  synced_at DateTime @default(now()) @map("synced_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  items              OrderItemTiendaNube[]
+  purchaseOrderLinks PurchaseOrderLink[]
+
+  @@index([estado_abastecimiento])
+  @@index([fecha_pedido])
+  @@index([estado_pago])
+  @@map("orders_tiendanube")
+}
+
+model OrderItemTiendaNube {
+  id                     String  @id @default(uuid())
+  tienda_nube_item_id    String? @map("tienda_nube_item_id")
+  descripcion            String
+  sku_tiendanube         String? @map("sku_tiendanube")
+  cantidad               Int
+  cantidad_asignada_oc   Int     @default(0) @map("cantidad_asignada_oc")
+  precio_unitario        Decimal @db.Decimal(12, 2) @map("precio_unitario")
+
+  orderId   String          @map("order_id")
+  order     OrderTiendaNube @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String?         @map("product_id")
+  product   Product?        @relation(fields: [productId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  purchaseOrderItems PurchaseOrderItem[]
+
+  @@index([orderId])
+  @@index([productId])
+  @@map("order_items_tiendanube")
+}
+
+// ─────────────────────────────────────────
+// ÓRDENES DE COMPRA
+// ─────────────────────────────────────────
+
+model PurchaseOrder {
+  id           String   @id @default(uuid())
+  numero_oc    String   @unique @map("numero_oc") // OC-2024-0001
+  fecha        DateTime @default(now())
+  estado       String   @default("borrador")
+  // borrador | pendiente_envio | enviada | confirmada | cancelada | cerrada
+  canal_envio  String?  @map("canal_envio") // whatsapp | email | manual
+  observaciones String?
+  fecha_envio  DateTime? @map("fecha_envio")
+  fecha_entrega_estimada DateTime? @map("fecha_entrega_estimada")
+
+  supplierId String   @map("supplier_id")
+  supplier   Supplier @relation(fields: [supplierId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  items       PurchaseOrderItem[]
+  links       PurchaseOrderLink[]
+  invoices    SupplierInvoice[]
+  whatsappLogs WhatsappLog[]
+
+  @@index([supplierId])
+  @@index([estado])
+  @@index([fecha])
+  @@map("purchase_orders")
+}
+
+model PurchaseOrderItem {
+  id               String  @id @default(uuid())
+  descripcion      String
+  codigo_proveedor String? @map("codigo_proveedor")
+  cantidad         Int
+  precio_estimado  Decimal? @db.Decimal(12, 2) @map("precio_estimado")
+  notas            String?
+
+  purchaseOrderId String        @map("purchase_order_id")
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  productId       String?       @map("product_id")
+  product         Product?      @relation(fields: [productId], references: [id])
+  orderItemId     String?       @map("order_item_id")
+  orderItem       OrderItemTiendaNube? @relation(fields: [orderItemId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([purchaseOrderId])
+  @@index([productId])
+  @@map("purchase_order_items")
+}
+
+model PurchaseOrderLink {
+  id                  String @id @default(uuid())
+  prioridad           Int    @default(0)
+
+  purchaseOrderId     String        @map("purchase_order_id")
+  purchaseOrder       PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  tiendaNubeOrderId   String        @map("tienda_nube_order_id")
+  tiendaNubeOrder     OrderTiendaNube @relation(fields: [tiendaNubeOrderId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([purchaseOrderId, tiendaNubeOrderId])
+  @@index([purchaseOrderId])
+  @@index([tiendaNubeOrderId])
+  @@map("purchase_order_links")
+}
+
+// ─────────────────────────────────────────
+// FACTURAS DE PROVEEDORES (MÓDULO 2)
+// ─────────────────────────────────────────
+
+model SupplierInvoice {
+  id                   String   @id @default(uuid())
+  numero_factura       String?  @map("numero_factura")
+  fecha_factura        DateTime? @map("fecha_factura")
+  archivo_url          String?  @map("archivo_url")
+  archivo_tipo         String?  @map("archivo_tipo") // pdf | image
+  estado_procesamiento String   @default("pendiente") @map("estado_procesamiento")
+  // pendiente | procesando | procesado | validado | con_diferencias
+
+  total_factura  Decimal? @db.Decimal(12, 2) @map("total_factura")
+  total_oc       Decimal? @db.Decimal(12, 2) @map("total_oc")
+  diferencia     Decimal? @db.Decimal(12, 2)
+
+  supplierId      String        @map("supplier_id")
+  supplier        Supplier      @relation(fields: [supplierId], references: [id])
+  purchaseOrderId String?       @map("purchase_order_id")
+  purchaseOrder   PurchaseOrder? @relation(fields: [purchaseOrderId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  items        SupplierInvoiceItem[]
+  matchResults InvoiceMatchResult[]
+
+  @@index([supplierId])
+  @@index([purchaseOrderId])
+  @@map("supplier_invoices")
+}
+
+model SupplierInvoiceItem {
+  id                  String  @id @default(uuid())
+  descripcion_extraida String  @map("descripcion_extraida")
+  codigo_extraido     String? @map("codigo_extraido")
+  cantidad            Decimal @db.Decimal(10, 3)
+  precio_unitario     Decimal @db.Decimal(12, 2) @map("precio_unitario")
+  subtotal            Decimal @db.Decimal(12, 2)
+  confidence_score    Float?  @map("confidence_score") // 0-1, OCR confidence
+
+  invoiceId String          @map("invoice_id")
+  invoice   SupplierInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  productId String?         @map("product_id")
+  product   Product?        @relation(fields: [productId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([invoiceId])
+  @@map("supplier_invoice_items")
+}
+
+model InvoiceMatchResult {
+  id               String @id @default(uuid())
+  resultado        String // ok | diferencia_cantidad | diferencia_precio | extra | faltante
+  descripcion      String?
+  cantidad_oc      Int?   @map("cantidad_oc")
+  cantidad_factura Int?   @map("cantidad_factura")
+  precio_oc        Decimal? @db.Decimal(12, 2) @map("precio_oc")
+  precio_factura   Decimal? @db.Decimal(12, 2) @map("precio_factura")
+
+  invoiceId String          @map("invoice_id")
+  invoice   SupplierInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([invoiceId])
+  @@map("invoice_match_results")
+}
+
+// ─────────────────────────────────────────
+// WHATSAPP LOGS
+// ─────────────────────────────────────────
+
+model WhatsappLog {
+  id               String    @id @default(uuid())
+  telefono_destino String    @map("telefono_destino")
+  mensaje          String
+  estado_envio     String    @default("generado") @map("estado_envio")
+  // generado | copiado | abierto_wa | confirmado_manual | enviado_api
+  fecha_envio      DateTime? @map("fecha_envio")
+  fecha_lectura    DateTime? @map("fecha_lectura")
+  respuesta        String?
+
+  supplierId      String?        @map("supplier_id")
+  supplier        Supplier?      @relation(fields: [supplierId], references: [id])
+  purchaseOrderId String?        @map("purchase_order_id")
+  purchaseOrder   PurchaseOrder? @relation(fields: [purchaseOrderId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([purchaseOrderId])
+  @@map("whatsapp_logs")
+}
+
+// ─────────────────────────────────────────
+// STOCK
+// ─────────────────────────────────────────
+
+model StockMovement {
+  id         String   @id @default(uuid())
+  tipo       String   // entrada | salida
+  motivo     String   // compra_confirmada | pedido_despachado | ajuste_manual
+  cantidad   Int
+  referencia String?  // ID de OC o pedido TN
+  notas      String?
+  fecha      DateTime @default(now())
+
+  productId String  @map("product_id")
+  product   Product @relation(fields: [productId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([productId])
+  @@index([fecha])
+  @@map("stock_movements")
+}
+
+// ─────────────────────────────────────────
+// AUDITORÍA
+// ─────────────────────────────────────────
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  entidad   String   // purchase_order | order | product | supplier | invoice
+  entidadId String   @map("entidad_id")
+  accion    String   // create | update | delete | send | confirm
+  cambios   Json?    // { antes: {...}, despues: {...} }
+  ip        String?
+  fecha     DateTime @default(now())
+
+  userId String? @map("user_id")
+  user   User?   @relation(fields: [userId], references: [id])
+
+  @@index([entidad, entidadId])
+  @@index([fecha])
+  @@map("audit_logs")
+}
+
+// ─────────────────────────────────────────
+// CONFIGURACIÓN
+// ─────────────────────────────────────────
+
+model AppSetting {
+  id    String @id @default(uuid())
+  clave String @unique
+  valor String
+  tipo  String @default("string") // string | json | boolean | number
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("app_settings")
+}
